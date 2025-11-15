@@ -17,6 +17,7 @@ sodiumoxide.workspace = true
 # Async runtime
 tokio.workspace = true
 tokio-util.workspace = true
+async-trait.workspace = true
 
 # Networking
 socket2.workspace = true

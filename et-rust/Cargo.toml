@@ -20,6 +20,7 @@ license = "Apache-2.0"
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
 tokio-util = { version = "0.7", features = ["codec"] }
+async-trait = "0.1"
 
 # Protocol buffers
 prost = "0.12"

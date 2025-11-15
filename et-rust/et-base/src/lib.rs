@@ -11,6 +11,7 @@ pub mod constants;
 pub mod crypto;
 pub mod error;
 pub mod packet;
+pub mod socket;
 pub mod utils;
 
 // Re-export commonly used types
