@@ -7,6 +7,7 @@
 //! - Cryptography using libsodium
 //! - Utility functions
 
+pub mod backed;
 pub mod constants;
 pub mod crypto;
 pub mod error;
@@ -15,6 +16,7 @@ pub mod socket;
 pub mod utils;
 
 // Re-export commonly used types
+pub use backed::{BackedReader, BackedWriter, WriteState, MAX_BACKUP_BYTES};
 pub use constants::*;
 pub use crypto::{CryptoHandler, CRYPTO_KEY_BYTES, CRYPTO_MAC_BYTES, CRYPTO_NONCE_BYTES};
 pub use error::{EtError, Result};
