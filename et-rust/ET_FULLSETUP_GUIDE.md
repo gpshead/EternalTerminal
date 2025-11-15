@@ -54,13 +54,19 @@ Eternal Terminal (ET) provides persistent remote shell sessions that survive net
 sudo apt-get update
 sudo apt-get install -y openssh-server openssh-client
 
+# Configure SSH to bind only to localhost (for security)
+echo "ListenAddress 127.0.0.1" | sudo tee -a /etc/ssh/sshd_config
+
 # Start SSH server
 sudo mkdir -p /var/run/sshd
 sudo /usr/sbin/sshd
 
-# Verify SSH is running
+# Verify SSH is running and bound to localhost only
 ps aux | grep sshd | grep -v grep
+sudo netstat -tlnp | grep :22 || sudo ss -tlnp | grep :22
 ```
+
+**Security Note**: By binding SSH to `127.0.0.1` only, the SSH server will only accept connections from localhost, preventing external access.
 
 ### 2. Set Up SSH Keys for Passwordless Authentication
 
@@ -132,23 +138,27 @@ mkdir -p ~/et-logs
 ### 5. Start ET Server
 
 ```bash
-# Start etserver on non-privileged port 2022
+# Start etserver on non-privileged port 2022, bound to localhost only
 etserver --port 2022 \
+         --bindip 127.0.0.1 \
          --pidfile ~/etserver.pid \
          --logdir ~/et-logs \
          --logtostdout &
 
-# Verify server is running
+# Verify server is running and bound to localhost only
 ps aux | grep etserver | grep -v grep
+netstat -tlnp 2>/dev/null | grep :2022 || ss -tlnp 2>/dev/null | grep :2022
 ```
 
 **Expected log output:**
 ```
 [INFO] In child, about to start server.
-[INFO] Listening on 0.0.0.0:2022/2/1/6
-[INFO] Listening on 0.0.0.0:2022/10/1/6
+[INFO] Listening on 127.0.0.1:2022/2/1/6
+[INFO] Listening on 127.0.0.1:2022/10/1/6
 [INFO] Creating server
 ```
+
+**Security Note**: The `--bindip 127.0.0.1` parameter ensures ET server only accepts connections from localhost, preventing external access. This is critical for localhost-only testing environments.
 
 ### 6. Connect with ET Client
 
@@ -171,9 +181,19 @@ et --terminal-path ~/bin/etterminal \
 
 #### Connection Parameters
 
+**Server Parameters:**
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `--port` | ET server port | 2022 |
+| `--bindip` | IP address to bind to | "" (all interfaces) |
+| `--logdir` | Directory for log files | Required |
+| `--pidfile` | Location of PID file | /var/run/etserver.pid |
+| `--logtostdout` | Log to stdout instead of file | false |
+
+**Client Parameters:**
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--port` | ET server port to connect to | 2022 |
 | `--terminal-path` | Path to etterminal binary | (searches PATH) |
 | `--logdir` | Directory for log files | Required |
 | `--logtostdout` | Log to stdout instead of file | false |
@@ -194,14 +214,16 @@ ssh localhost 'echo Test successful'
 ### Test 2: ET Server Listening
 
 ```bash
-# If netstat/ss available:
-netstat -tlnp | grep 2022
+# Check if etserver is bound to localhost only:
+netstat -tlnp 2>/dev/null | grep 2022 || ss -tlnp 2>/dev/null | grep 2022
 # Or:
-lsof -i :2022
+lsof -i :2022 2>/dev/null
 ```
 
-✅ **Success**: etserver listening on 0.0.0.0:2022
+✅ **Success**: etserver listening on `127.0.0.1:2022` (localhost only)
 ❌ **Failure**: Check server logs in ~/et-logs
+
+**Note**: If you see `0.0.0.0:2022`, the server is bound to all interfaces (less secure). Restart with `--bindip 127.0.0.1` to bind to localhost only.
 
 ### Test 3: ET Client Connection
 
@@ -255,8 +277,11 @@ et --terminal-path ~/bin/etterminal user@host
 # Create log directory
 mkdir -p ~/et-logs
 
-# Always specify --logdir
-etserver --port 2022 --logdir ~/et-logs --pidfile ~/etserver.pid
+# Always specify --logdir and bind to localhost
+etserver --port 2022 \
+         --bindip 127.0.0.1 \
+         --logdir ~/et-logs \
+         --pidfile ~/etserver.pid
 ```
 
 ### Issue: "Address already in use (os error 98)"
@@ -268,8 +293,11 @@ etserver --port 2022 --logdir ~/et-logs --pidfile ~/etserver.pid
 # Find and kill existing etserver
 pkill -f etserver
 
-# Or use a different port
-etserver --port 2023 --logdir ~/et-logs --pidfile ~/etserver.pid
+# Or use a different port (still bind to localhost)
+etserver --port 2023 \
+         --bindip 127.0.0.1 \
+         --logdir ~/et-logs \
+         --pidfile ~/etserver.pid
 et --port 2023 user@localhost
 ```
 
@@ -335,6 +363,7 @@ User=myuser
 ExecStart=/home/myuser/bin/etserver \
           --daemon \
           --port 2022 \
+          --bindip 127.0.0.1 \
           --logdir /home/myuser/et-logs \
           --pidfile /home/myuser/etserver.pid
 
@@ -342,15 +371,39 @@ ExecStart=/home/myuser/bin/etserver \
 WantedBy=multi-user.target
 ```
 
+**Note**: For remote access, change `--bindip 127.0.0.1` to `--bindip 0.0.0.0` or specify your server's IP address.
+
 ## Security Considerations
 
 ### For Non-Root Users
 
-1. **Port Selection**: Use ports >1024 (non-privileged)
+1. **Network Binding**: Always bind to localhost for local-only access
+   - **Localhost only** (recommended for testing): `--bindip 127.0.0.1` ✅
+   - **All interfaces** (external access): `--bindip 0.0.0.0` ⚠️ Only if needed
+   - **Specific interface**: `--bindip <your-ip>` for controlled access
+
+   ```bash
+   # Secure (localhost only)
+   etserver --port 2022 --bindip 127.0.0.1 --logdir ~/et-logs --pidfile ~/etserver.pid
+
+   # Less secure (all interfaces) - only use if you need remote access
+   etserver --port 2022 --bindip 0.0.0.0 --logdir ~/et-logs --pidfile ~/etserver.pid
+   ```
+
+2. **SSH Server Binding**: Configure SSH to bind to localhost only
+   ```bash
+   # Add to /etc/ssh/sshd_config
+   ListenAddress 127.0.0.1
+
+   # For IPv6 localhost:
+   ListenAddress ::1
+   ```
+
+3. **Port Selection**: Use ports >1024 (non-privileged)
    - Default ET port: 2022 ✅
    - Privileged ports (<1024): ❌ Require root
 
-2. **File Permissions**:
+4. **File Permissions**:
    ```bash
    chmod 700 ~/.ssh
    chmod 600 ~/.ssh/authorized_keys
@@ -358,16 +411,20 @@ WantedBy=multi-user.target
    chmod 644 ~/.ssh/id_ed25519.pub
    ```
 
-3. **Firewall Rules**: If running on a server accessible from internet
+5. **Firewall Rules**: If running on a server accessible from internet
    ```bash
    # Allow only specific IPs (if needed)
    sudo ufw allow from 192.168.1.0/24 to any port 2022
+
+   # Or block all external access to ET port
+   sudo ufw deny 2022
    ```
 
-4. **SSH Hardening**:
+6. **SSH Hardening**:
    - Disable password authentication (use keys only)
    - Use strong key types (ed25519, rsa 4096+)
    - Keep SSH server updated
+   - Restrict SSH to localhost if not needed externally
 
 ## Performance Tuning
 
@@ -469,21 +526,36 @@ Eternal Terminal provides resilient remote shell sessions ideal for:
 - ✅ Low-latency requirements with network buffering
 
 **Setup Checklist:**
-- [ ] SSH server running and accessible
+- [ ] SSH server running and bound to localhost (127.0.0.1)
 - [ ] SSH keys configured for passwordless auth
 - [ ] ET binaries (et, etserver, etterminal) in PATH
 - [ ] Log directory created
-- [ ] etserver started on port 2022
+- [ ] etserver started on port 2022, bound to localhost
 - [ ] ET client successfully connects
 - [ ] Persistent connection tested through interruption
 
-**Quick Start:**
+**Quick Start (Localhost Testing):**
 ```bash
-# Server side
-etserver --port 2022 --logdir ~/et-logs --pidfile ~/etserver.pid
+# Server side (bound to localhost for security)
+etserver --port 2022 \
+         --bindip 127.0.0.1 \
+         --logdir ~/et-logs \
+         --pidfile ~/etserver.pid
 
 # Client side
-et --terminal-path ~/bin/etterminal --logdir ~/et-logs user@server
+et --terminal-path ~/bin/etterminal --logdir ~/et-logs user@localhost
+```
+
+**Quick Start (Remote Access):**
+```bash
+# Server side (bind to all interfaces or specific IP)
+etserver --port 2022 \
+         --bindip 0.0.0.0 \
+         --logdir ~/et-logs \
+         --pidfile ~/etserver.pid
+
+# Client side (from remote machine)
+et --terminal-path ~/bin/etterminal --logdir ~/et-logs user@remote-server
 ```
 
 For more information, see:
