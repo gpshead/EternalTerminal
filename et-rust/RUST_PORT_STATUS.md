@@ -9,8 +9,8 @@ This document tracks the status of porting Eternal Terminal from C++ to Rust, in
 The Rust port is organized as a Cargo workspace with the following crates:
 
 - **et-proto**: Protocol buffer definitions (✅ COMPLETE)
-- **et-base**: Core networking, crypto, and packet handling (✅ CORE COMPLETE)
-- **et-terminal**: Terminal logic, client, and server (🚧 IN PROGRESS)
+- **et-base**: Core networking, crypto, and packet handling (✅ COMPLETE)
+- **et-terminal**: Terminal logic, client, and server (⏳ PENDING)
 - **et-client**: Client binary (`et`) (⏳ PENDING)
 - **et-server**: Server binary (`etserver`) (⏳ PENDING)
 - **et-etterminal**: User terminal binary (`etterminal`) (⏳ PENDING)
@@ -66,13 +66,24 @@ Implemented the following modules:
 - String manipulation functions
 - Helper functions from C++ Headers.hpp
 
+#### socket.rs
+- Async socket abstraction traits (SocketHandler, AsyncSocket, AsyncListener)
+- TcpSocketHandler implementation with TCP_NODELAY
+- Packet read/write with length prefixes
+- Protobuf message helpers (read_proto, write_proto)
+- 128MB message size limit
+- Full async/await support using tokio
+- Equivalent to C++ SocketHandler hierarchy
+
 ### ✅ Tests
 All implemented modules have comprehensive test suites:
-- 13 unit tests passing
+- 15 unit tests passing (13 base + 2 socket)
 - Crypto roundtrip tests
 - Packet encryption/decryption tests
 - Serialization tests
 - Error handling tests
+- Socket read/write tests
+- TCP listener creation tests
 
 ## Dependencies Mapping
 
@@ -91,12 +102,16 @@ All implemented modules have comprehensive test suites:
 
 ### 🚧 High Priority - Core Networking
 
-#### Socket Abstractions
-- [ ] SocketHandler trait (base interface)
-- [ ] TcpSocketHandler implementation
-- [ ] UnixSocketHandler implementation
-- [ ] PipeSocketHandler implementation
-- [ ] Socket utilities (set TCP_NODELAY, etc.)
+#### Socket Abstractions ✅ COMPLETE
+- [x] SocketHandler trait (base interface)
+- [x] AsyncSocket trait for connections
+- [x] AsyncListener trait for accepting
+- [x] TcpSocketHandler implementation
+- [x] Socket utilities (TCP_NODELAY, etc.)
+- [x] Packet read/write methods
+- [x] Protobuf message helpers
+- [ ] UnixSocketHandler implementation (optional, for IPC)
+- [ ] PipeSocketHandler implementation (optional, for IPC)
 
 #### Reliable Transport Layer
 - [ ] BackedReader - buffered reading with sequence numbers
