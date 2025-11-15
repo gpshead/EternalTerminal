@@ -39,11 +39,24 @@ Eternal Terminal (ET) provides persistent remote shell sessions that survive net
 - Linux system with network access
 - OpenSSH server and client installed
 - Build tools for compiling ET (or pre-built binaries)
+- Network diagnostic tools (netstat, ss, lsof) - optional but recommended
 
 ### User Permissions
 - Non-privileged user account
 - Ability to bind to non-privileged ports (>1024)
 - SSH access to localhost (or remote server)
+
+### Install Network Diagnostic Tools (Recommended)
+
+These tools help verify that services are bound to localhost only:
+
+```bash
+sudo apt-get install -y net-tools iproute2 lsof
+```
+
+- **net-tools**: Provides `netstat` command
+- **iproute2**: Provides `ss` command (modern alternative to netstat)
+- **lsof**: List open files and network connections
 
 ## Setup Steps
 
