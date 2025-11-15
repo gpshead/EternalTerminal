@@ -5,4 +5,28 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 
+[[bin]]
+name = "etserver-rs"
+path = "src/main.rs"
+
 [dependencies]
+# Local dependencies
+et-base = { path = "../et-base" }
+et-proto = { path = "../et-proto" }
+
+# Async runtime
+tokio.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Error handling
+anyhow.workspace = true
+
+# CLI
+clap.workspace = true
+
+# Utilities
+uuid.workspace = true
+rand.workspace = true
