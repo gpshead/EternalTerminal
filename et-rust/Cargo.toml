@@ -1,0 +1,70 @@
+[workspace]
+members = [
+    "et-base",
+    "et-proto",
+    "et-terminal",
+    "et-client",
+    "et-server",
+    "et-etterminal",
+    "et-interop",
+]
+resolver = "2"
+
+[workspace.package]
+version = "6.2.11"
+edition = "2021"
+authors = ["Eternal Terminal Contributors"]
+license = "Apache-2.0"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+
+# Protocol buffers
+prost = "0.12"
+prost-types = "0.12"
+bytes = "1.5"
+
+# Cryptography
+sodiumoxide = "0.2"
+
+# Networking
+socket2 = "0.5"
+
+# Terminal/PTY
+nix = { version = "0.27", features = ["term", "signal", "process", "fs", "ioctl", "poll"] }
+libc = "0.2"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+env_logger = "0.11"
+log = "0.4"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# CLI parsing
+clap = { version = "4.4", features = ["derive"] }
+
+# Utilities
+uuid = { version = "1.6", features = ["v4"] }
+base64 = "0.21"
+crossbeam = "0.8"
+parking_lot = "0.12"
+lazy_static = "1.4"
+rand = "0.8"
+
+# Testing
+proptest = "1.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
