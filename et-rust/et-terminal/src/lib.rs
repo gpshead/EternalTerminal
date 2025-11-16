@@ -7,8 +7,10 @@
 pub mod pty;
 pub mod raw_mode;
 pub mod ssh;
+pub mod config;
 
 // Re-export commonly used types
 pub use pty::{PtyMaster, TerminalSize};
 pub use raw_mode::{RawModeGuard, is_terminal};
 pub use ssh::{SshClient, SshConfig, parse_ssh_target};
+pub use config::{Config, HostSettings, PortForward};

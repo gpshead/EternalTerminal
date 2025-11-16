@@ -32,3 +32,7 @@ bytes.workspace = true
 
 # SSH
 ssh2.workspace = true
+
+# Configuration
+toml.workspace = true
+dirs.workspace = true

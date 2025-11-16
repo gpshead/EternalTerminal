@@ -17,7 +17,7 @@ use et_base::{
     CryptoHandler, Packet, CLIENT_SERVER_NONCE_MSB, PROTOCOL_VERSION, SERVER_CLIENT_NONCE_MSB,
 };
 use et_proto::{ConnectRequest, ConnectResponse, ConnectStatus, SocketEndpoint};
-use et_terminal::{parse_ssh_target, RawModeGuard, SshClient, SshConfig};
+use et_terminal::{parse_ssh_target, RawModeGuard, SshClient, SshConfig, Config};
 use rand::Rng;
 use signal_hook::consts::signal::*;
 use signal_hook_tokio::Signals;
@@ -59,6 +59,22 @@ struct Args {
     /// Verbose logging
     #[arg(short, long)]
     verbose: bool,
+
+    /// Local port forward: -L local_port:remote_host:remote_port
+    #[arg(short = 'L', long = "local-forward", value_name = "SPEC")]
+    local_forwards: Vec<String>,
+
+    /// Remote port forward: -R remote_port:local_host:local_port
+    #[arg(short = 'R', long = "remote-forward", value_name = "SPEC")]
+    remote_forwards: Vec<String>,
+
+    /// Jumphost: user@host for intermediate SSH hop
+    #[arg(short = 'J', long)]
+    jumphost: Option<String>,
+
+    /// Disable config file loading
+    #[arg(long)]
+    no_config: bool,
 }
 
 /// Generate a secure random 32-byte passkey
@@ -94,15 +110,53 @@ async fn main() -> Result<()> {
 
     info!("ET Production Client v{}", env!("CARGO_PKG_VERSION"));
 
+    // Load configuration file (unless disabled)
+    let config = if args.no_config {
+        Config::default()
+    } else {
+        Config::load().unwrap_or_else(|e| {
+            debug!("Failed to load config: {}, using defaults", e);
+            Config::default()
+        })
+    };
+
     // Parse target: [user@]host[:port]
     let (user, host, ssh_port) = parse_ssh_target(&args.target)
         .context("Failed to parse target")?;
 
+    // Get host-specific settings from config
+    let host_settings = config.get_host_config(&host);
+    debug!("Host settings: {:?}", host_settings);
+
+    // Determine SSH port: CLI arg > target port > config > default
     let ssh_port = if ssh_port != 22 {
         ssh_port
-    } else {
+    } else if args.ssh_port != 22 {
         args.ssh_port
+    } else {
+        host_settings.ssh_port
     };
+
+    // Determine user: target user > config user > default
+    let user = if !user.is_empty() {
+        user
+    } else if let Some(ref config_user) = host_settings.user {
+        config_user.clone()
+    } else {
+        user
+    };
+
+    // Determine identity file: CLI arg > config
+    let identity_file = args.identity_file
+        .or(host_settings.identity_file);
+
+    // Determine jumphost: CLI arg > config
+    let jumphost = args.jumphost
+        .or(host_settings.jumphost);
+
+    if let Some(ref jh) = jumphost {
+        info!("Using jumphost: {}", jh);
+    }
 
     info!("Connecting to {}@{} (SSH port {})", user, host, ssh_port);
 
@@ -135,13 +189,33 @@ async fn main() -> Result<()> {
 
     debug!("Remote command: {}", etterminal_cmd);
 
+    // TODO: Implement port forwarding
+    if !args.local_forwards.is_empty() {
+        info!("Local port forwards requested: {:?}", args.local_forwards);
+        warn!("Port forwarding not yet implemented in Phase 6");
+    }
+    if !args.remote_forwards.is_empty() {
+        info!("Remote port forwards requested: {:?}", args.remote_forwards);
+        warn!("Port forwarding not yet implemented in Phase 6");
+    }
+
+    // TODO: Implement jumphost support
+    // For now, we connect directly. Full jumphost support requires:
+    // 1. SSH to jumphost
+    // 2. From jumphost, SSH to final destination
+    // 3. Spawn etterminal on final destination
+    if jumphost.is_some() {
+        warn!("Jumphost support not yet fully implemented in Phase 6");
+        warn!("Connecting directly to target instead");
+    }
+
     // Connect via SSH and spawn etterminal
     info!("Spawning remote terminal via SSH...");
     let ssh_config = SshConfig {
         host: host.clone(),
         port: ssh_port,
         user: user.clone(),
-        identity_file: args.identity_file.clone(),
+        identity_file,
         password: None,
     };
 

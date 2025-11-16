@@ -70,6 +70,10 @@ ssh2 = "0.9"
 # Daemon mode
 daemonize = "0.5"
 
+# Configuration
+dirs = "5.0"
+toml = "0.8"
+
 # Testing
 proptest = "1.4"
 

@@ -1,0 +1,99 @@
+# Eternal Terminal Configuration File Example
+#
+# This file should be placed at:
+#   - ~/.et/config.toml (user config)
+#   - /etc/et/config.toml (system config)
+#
+# User config takes precedence over system config.
+# Command-line arguments override config file settings.
+
+# Default settings applied to all connections
+[defaults]
+ssh_port = 22
+et_port = 2022
+
+# Optional: Default SSH identity file
+# identity_file = "~/.ssh/id_rsa"
+
+# Optional: Default jumphost for all connections
+# jumphost = "bastion.example.com"
+
+# Optional: Enable verbose logging by default
+verbose = false
+
+# Host-specific configuration
+# Patterns support wildcards (*) for matching multiple hosts
+#
+# Settings are applied in order, with later matches overriding earlier ones.
+# More specific patterns should come after more general ones.
+
+[[hosts]]
+pattern = "*.work.com"
+ssh_port = 2222
+identity_file = "~/.ssh/work_key"
+jumphost = "bastion.work.com"
+user = "admin"
+
+[[hosts]]
+pattern = "*.dev.example.com"
+ssh_port = 22
+et_port = 2022
+identity_file = "~/.ssh/dev_key"
+user = "developer"
+
+[[hosts]]
+pattern = "prod-server-*"
+ssh_port = 2222
+identity_file = "~/.ssh/production_key"
+jumphost = "prod-bastion.example.com"
+user = "deploy"
+
+[[hosts]]
+pattern = "localhost"
+ssh_port = 22
+et_port = 2022
+
+# Port forwarding rules
+# These can be applied globally or to specific hosts
+#
+# Format for local forwards (equivalent to -L):
+#   Listen on local_port, forward to remote_host:remote_port
+#
+# Note: Port forwarding implementation is planned for future phases
+
+[[port_forwards]]
+local_port = 8080
+remote_host = "localhost"
+remote_port = 80
+for_host = "web-server.example.com"
+
+[[port_forwards]]
+local_port = 5432
+remote_host = "db.internal"
+remote_port = 5432
+for_host = "*.work.com"
+
+[[port_forwards]]
+local_port = 3000
+remote_host = "localhost"
+remote_port = 3000
+# No for_host means this applies to all connections
+
+# Configuration Tips:
+#
+# 1. Patterns are matched in order, so place more specific patterns
+#    after more general ones.
+#
+# 2. Use wildcards (*) to match multiple hosts:
+#    - "*.example.com" matches "server.example.com" and "db.example.com"
+#    - "prod-*" matches "prod-web" and "prod-db"
+#
+# 3. Command-line arguments always override config file settings:
+#    - et -i ~/.ssh/special_key host.com (uses special_key, not config)
+#    - et -J jumphost.com host.com (uses jumphost.com, not config)
+#
+# 4. Environment variables can be used in identity_file paths:
+#    - identity_file = "~/.ssh/id_rsa" (~ expands to home directory)
+#
+# 5. For multiple jumphosts (ProxyJump-style), use SSH config file
+#    in conjunction with this config.
