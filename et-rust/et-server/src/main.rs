@@ -10,7 +10,7 @@ use anyhow::Result;
 use clap::Parser;
 use et_base::{
     socket::{self, AsyncSocket, SocketHandler, TcpSocketHandler},
-    CryptoHandler, Packet, CRYPTO_KEY_BYTES, CLIENT_SERVER_NONCE_MSB, PROTOCOL_VERSION,
+    CryptoHandler, Packet, CLIENT_SERVER_NONCE_MSB, PROTOCOL_VERSION,
     SERVER_CLIENT_NONCE_MSB,
 };
 use et_proto::{ConnectRequest, ConnectResponse, ConnectStatus, SocketEndpoint};
@@ -31,6 +31,11 @@ struct Args {
     #[arg(short, long, default_value = "0.0.0.0")]
     bind: String,
 
+    /// Fixed passkey for all clients (32-byte hex string or 32-character ASCII string)
+    /// If not provided, uses fixed test key (32 zero bytes)
+    #[arg(short = 'k', long)]
+    passkey: Option<String>,
+
     /// Verbose logging
     #[arg(short, long)]
     verbose: bool,
@@ -39,12 +44,44 @@ struct Args {
 /// Server state tracking connected clients
 struct ServerState {
     clients: HashMap<String, ClientInfo>,
+    fixed_passkey: Vec<u8>, // Shared passkey for all clients
 }
 
 struct ClientInfo {
     key: Vec<u8>,
     #[allow(dead_code)]
     last_seen: std::time::Instant,
+}
+
+/// Parse passkey from string (hex or ASCII) to 32-byte key
+fn parse_passkey(passkey: Option<&str>) -> Result<Vec<u8>> {
+    match passkey {
+        None => {
+            // Default test key: 32 zero bytes
+            Ok(vec![0u8; 32])
+        }
+        Some(key_str) => {
+            // Try to parse as hex first (64 hex chars = 32 bytes)
+            if key_str.len() == 64 && key_str.chars().all(|c| c.is_ascii_hexdigit()) {
+                let mut key = Vec::with_capacity(32);
+                for i in 0..32 {
+                    let byte_str = &key_str[i * 2..i * 2 + 2];
+                    let byte = u8::from_str_radix(byte_str, 16)
+                        .map_err(|e| anyhow::anyhow!("Invalid hex passkey: {}", e))?;
+                    key.push(byte);
+                }
+                Ok(key)
+            } else if key_str.len() == 32 {
+                // Treat as 32-character ASCII string (like C++ implementation)
+                Ok(key_str.as_bytes().to_vec())
+            } else {
+                Err(anyhow::anyhow!(
+                    "Passkey must be either 64 hex characters or 32 ASCII characters, got {} chars",
+                    key_str.len()
+                ))
+            }
+        }
+    }
 }
 
 #[tokio::main]
@@ -66,9 +103,14 @@ async fn main() -> Result<()> {
     info!("Starting Eternal Terminal Server (Rust) v{}", env!("CARGO_PKG_VERSION"));
     info!("Listening on {}:{}", args.bind, args.port);
 
+    // Parse passkey
+    let fixed_passkey = parse_passkey(args.passkey.as_deref())?;
+    info!("Using {} passkey for all clients", if args.passkey.is_some() { "provided" } else { "default test" });
+
     // Create server state
     let state = Arc::new(Mutex::new(ServerState {
         clients: HashMap::new(),
+        fixed_passkey,
     }));
 
     // Create socket handler and listener
@@ -134,13 +176,14 @@ async fn handle_client(
     // Check if client exists or is new
     let (status, key) = {
         let mut state_guard = state.lock().await;
+        let key = state_guard.fixed_passkey.clone();
+
         if let Some(client_info) = state_guard.clients.get(&client_id) {
             info!("Returning client: {}", client_id);
             (ConnectStatus::ReturningClient, client_info.key.clone())
         } else {
             info!("New client: {}", client_id);
-            // Generate a new key for this client
-            let key = generate_key();
+            // Use the fixed passkey for all clients (for interop testing)
             state_guard.clients.insert(
                 client_id.clone(),
                 ClientInfo {
@@ -235,14 +278,4 @@ async fn packet_echo_loop(
 
         info!("Echoed packet {} back to client", packet_count);
     }
-}
-
-/// Generate a key for a client
-///
-/// For interop testing, we use a fixed test key.
-/// In production, this would generate a random key and securely share it.
-fn generate_key() -> Vec<u8> {
-    // Fixed test key for interop testing
-    // In production, use: rand::thread_rng().gen::<[u8; CRYPTO_KEY_BYTES]>().to_vec()
-    vec![0u8; CRYPTO_KEY_BYTES]
 }

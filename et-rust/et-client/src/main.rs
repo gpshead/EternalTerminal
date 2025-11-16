@@ -38,9 +38,45 @@ struct Args {
     #[arg(short = 'n', long, default_value = "5")]
     num_packets: usize,
 
+    /// Passkey (32-byte hex string or 32-character ASCII string)
+    /// If not provided, uses fixed test key (32 zero bytes)
+    #[arg(short = 'k', long)]
+    passkey: Option<String>,
+
     /// Verbose logging
     #[arg(short, long)]
     verbose: bool,
+}
+
+/// Parse passkey from string (hex or ASCII) to 32-byte key
+fn parse_passkey(passkey: Option<&str>) -> Result<Vec<u8>> {
+    match passkey {
+        None => {
+            // Default test key: 32 zero bytes
+            Ok(vec![0u8; 32])
+        }
+        Some(key_str) => {
+            // Try to parse as hex first (64 hex chars = 32 bytes)
+            if key_str.len() == 64 && key_str.chars().all(|c| c.is_ascii_hexdigit()) {
+                let mut key = Vec::with_capacity(32);
+                for i in 0..32 {
+                    let byte_str = &key_str[i * 2..i * 2 + 2];
+                    let byte = u8::from_str_radix(byte_str, 16)
+                        .map_err(|e| anyhow::anyhow!("Invalid hex passkey: {}", e))?;
+                    key.push(byte);
+                }
+                Ok(key)
+            } else if key_str.len() == 32 {
+                // Treat as 32-character ASCII string (like C++ implementation)
+                Ok(key_str.as_bytes().to_vec())
+            } else {
+                Err(anyhow::anyhow!(
+                    "Passkey must be either 64 hex characters or 32 ASCII characters, got {} chars",
+                    key_str.len()
+                ))
+            }
+        }
+    }
 }
 
 #[tokio::main]
@@ -107,10 +143,9 @@ async fn main() -> Result<()> {
     };
     info!("Connection accepted: {}", status_str);
 
-    // For this test, we'll use a dummy key since the server generates one
-    // In a real implementation, the key would be retrieved from the server's response
-    // or from a secure key exchange mechanism
-    let key = vec![0u8; 32]; // Placeholder - in real ET, this would be securely exchanged
+    // Parse passkey from command line or use default test key
+    let key = parse_passkey(args.passkey.as_deref())?;
+    info!("Using {} passkey", if args.passkey.is_some() { "provided" } else { "default test" });
 
     // Create crypto handlers
     info!("Setting up encryption");
