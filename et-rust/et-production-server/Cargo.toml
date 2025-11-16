@@ -1,0 +1,36 @@
+[package]
+name = "et-production-server"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "etserver-prod"
+path = "src/main.rs"
+
+[dependencies]
+# Local dependencies
+et-base = { path = "../et-base" }
+et-proto = { path = "../et-proto" }
+
+# Async runtime
+tokio.workspace = true
+
+# CLI parsing
+clap.workspace = true
+
+# Error handling
+anyhow.workspace = true
+thiserror.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Utilities
+bytes.workspace = true
+parking_lot.workspace = true
+
+# Daemon mode
+daemonize = "0.5"

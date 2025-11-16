@@ -7,6 +7,7 @@ members = [
     "et-server",
     "et-etterminal",
     "et-production-client",
+    "et-production-server",
     "et-interop",
 ]
 resolver = "2"
@@ -65,6 +66,9 @@ rand = "0.8"
 
 # SSH
 ssh2 = "0.9"
+
+# Daemon mode
+daemonize = "0.5"
 
 # Testing
 proptest = "1.4"
