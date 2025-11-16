@@ -5,4 +5,33 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 
+[[bin]]
+name = "etterminal-rs"
+path = "src/main.rs"
+
 [dependencies]
+# Local dependencies
+et-base = { path = "../et-base" }
+et-proto = { path = "../et-proto" }
+et-terminal = { path = "../et-terminal" }
+
+# Async runtime
+tokio.workspace = true
+
+# CLI parsing
+clap.workspace = true
+
+# Error handling
+anyhow.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Utilities
+bytes.workspace = true
+
+# Signal handling
+signal-hook = "0.3"
+signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
+futures = "0.3"
