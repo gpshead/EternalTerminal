@@ -12,7 +12,6 @@ use nix::ioctl_write_ptr_bad;
 use nix::libc::{self, STDERR_FILENO, STDIN_FILENO, STDOUT_FILENO};
 use nix::pty::{grantpt, posix_openpt, ptsname, unlockpt, PtyMaster as NixPtyMaster};
 use nix::sys::signal::{signal, SigHandler, Signal};
-use nix::sys::termios::{tcgetattr, tcsetattr, SetArg, Termios};
 use nix::unistd::{close, dup2, execvp, fork, setsid, ForkResult, Pid};
 use std::ffi::CString;
 use std::os::unix::io::{AsRawFd, BorrowedFd, RawFd};

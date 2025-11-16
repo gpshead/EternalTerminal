@@ -29,3 +29,6 @@ log.workspace = true
 # Utilities
 serde.workspace = true
 bytes.workspace = true
+
+# SSH
+ssh2.workspace = true

@@ -62,6 +62,9 @@ parking_lot = "0.12"
 lazy_static = "1.4"
 rand = "0.8"
 
+# SSH
+ssh2 = "0.9"
+
 # Testing
 proptest = "1.4"
 
