@@ -1,14 +1,12 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+/// Eternal Terminal - Terminal Handling Library
+///
+/// This library provides terminal handling functionality for the Eternal Terminal
+/// Rust implementation, including PTY (pseudo-terminal) management and terminal
+/// raw mode handling.
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub mod pty;
+pub mod raw_mode;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+// Re-export commonly used types
+pub use pty::{PtyMaster, TerminalSize};
+pub use raw_mode::{RawModeGuard, is_terminal};

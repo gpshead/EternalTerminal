@@ -6,3 +6,26 @@ authors.workspace = true
 license.workspace = true
 
 [dependencies]
+# Local dependencies
+et-base = { path = "../et-base" }
+et-proto = { path = "../et-proto" }
+
+# Async runtime
+tokio.workspace = true
+async-trait.workspace = true
+
+# Terminal/PTY
+nix.workspace = true
+libc.workspace = true
+
+# Error handling
+anyhow.workspace = true
+thiserror.workspace = true
+
+# Logging
+tracing.workspace = true
+log.workspace = true
+
+# Utilities
+serde.workspace = true
+bytes.workspace = true
