@@ -6,6 +6,7 @@ members = [
     "et-client",
     "et-server",
     "et-etterminal",
+    "et-production-client",
     "et-interop",
 ]
 resolver = "2"

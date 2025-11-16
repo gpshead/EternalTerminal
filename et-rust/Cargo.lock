@@ -323,6 +323,27 @@ name = "et-interop"
 version = "6.2.11"
 
 [[package]]
+name = "et-production-client"
+version = "6.2.11"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "clap",
+ "et-base",
+ "et-proto",
+ "et-terminal",
+ "futures",
+ "nix",
+ "rand",
+ "signal-hook",
+ "signal-hook-tokio",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "et-proto"
 version = "6.2.11"
 dependencies = [
