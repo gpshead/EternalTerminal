@@ -20,3 +20,13 @@ Thumbs.db
 # Test outputs
 *.profraw
 *.profdata
+
+# Benchmark results and logs
+benchmark-results-*/
+benchmark-output.log
+*.profraw
+*.profdata
+
+# E2E test artifacts
+e2e-test-results-*/
+.et-test-ssh/
